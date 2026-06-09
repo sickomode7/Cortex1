@@ -1,7 +1,7 @@
 # Backend
 backend/venv/
-backend/__pycache__/
-backend/*.pyc
+__pycache__/
+*.pyc
 backend/.env
 backend/.pytest_cache/
 
@@ -20,3 +20,4 @@ frontend/.DS_Store
 .idea/
 .vscode/
 *.log
+.vercel
