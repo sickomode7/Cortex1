@@ -45,7 +45,7 @@ export default function Home() {
           {/* Right Action Button (User Profile or nothing if signed out) */}
           <Show when="signed-in">
             <div className="bg-black/40 backdrop-blur-md border border-white/10 w-12 h-12 rounded-full flex items-center justify-center hover:bg-black/60 transition-colors">
-              <UserButton afterSignOutUrl="/" appearance={{ elements: { userButtonAvatarBox: "w-8 h-8" } }} />
+              <UserButton appearance={{ elements: { userButtonAvatarBox: "w-8 h-8" } }} />
             </div>
           </Show>
           <Show when="signed-out">

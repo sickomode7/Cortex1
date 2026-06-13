@@ -126,7 +126,7 @@ export default function DashboardPage() {
         </div>
         <div className="flex items-center gap-6">
           <span className="text-xs font-semibold tracking-widest text-zinc-500 uppercase cursor-pointer hover:text-white transition-colors">Curriculum</span>
-          <UserButton afterSignOutUrl="/" />
+          <UserButton />
         </div>
       </header>
 
