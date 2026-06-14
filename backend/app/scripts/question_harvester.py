@@ -47,35 +47,41 @@ def generate_questions_with_bedrock(concept_name: str, count: int) -> list[Gener
     model_id = "amazon.nova-micro-v1:0"
     
     prompt = f"""
-    You are an expert Python tutor. Generate {count} questions about "{concept_name}".
-    Generate a mix of 'MCQ' (Multiple Choice) and 'CODING_EXERCISE' (Programming tasks).
-    
-    Rules for CODING_EXERCISE:
-    - 'prompt' should clearly state what the python function should do.
-    - 'starter_code' MUST contain the python function signature, e.g. "def add(a, b):\n    # Write code here".
-    - 'expected_answer' MUST be purely hidden python assert statements to test their code, e.g. "assert add(1, 2) == 3".
-    - 'choices' must be null.
-    
-    Rules for MCQ:
-    - 'choices' must be a list of exactly 4 strings.
-    - 'expected_answer' must exactly match one of the strings in the choices array.
-    - 'starter_code' must be null.
+    You are an expert Python tutor creating quiz questions about "{concept_name}".
+    Generate exactly {count} questions — a mix of 'MCQ' and 'CODING_EXERCISE' types.
 
-    Return the response ONLY as valid JSON matching this schema:
+    === RULES FOR CODING_EXERCISE ===
+    - 'prompt': Clearly describe what the function should DO and what it must RETURN.
+    - 'starter_code': MUST be a function stub with a signature and a placeholder body.
+      Example: "def add(a, b):\n    # Write your code here\n    pass"
+      CRITICAL RULES for starter_code:
+        * NEVER use print() in the starter_code. The function MUST use `return`.
+        * The function must RETURN a value, not print it.
+        * Always end with `pass` as the placeholder.
+    - 'expected_answer': Python assert statements that test the RETURN VALUE of the function.
+      Example: "assert add(1, 2) == 3\nassert add(-1, 1) == 0"
+      CRITICAL: The asserts must test the return value, not printed output.
+    - 'choices': must be null.
+
+    === RULES FOR MCQ ===
+    - 'choices': exactly 4 strings.
+    - 'expected_answer': must exactly match one of the 4 choices.
+    - 'starter_code': must be null.
+
+    Return ONLY valid JSON matching this exact schema (no markdown, no extra text):
     {{
       "questions": [
         {{
           "question_type": "CODING_EXERCISE",
-          "prompt": "Write a function...",
+          "prompt": "Write a function `sum_even(numbers)` that takes a list of integers and returns the sum of all even numbers.",
           "choices": null,
-          "starter_code": "def my_func():",
-          "expected_answer": "assert my_func() == True",
-          "explanation": "...",
+          "starter_code": "def sum_even(numbers):\n    # Write your code here\n    pass",
+          "expected_answer": "assert sum_even([1, 2, 3, 4]) == 6\nassert sum_even([10, 20]) == 30\nassert sum_even([1, 3, 5]) == 0",
+          "explanation": "Iterate through the list, check if each number is even using modulo, and accumulate the sum.",
           "difficulty": "EASY"
         }}
       ]
     }}
-    Do not include any markdown formatting, code blocks, or extra text. Just output raw JSON.
     """
     
     try:

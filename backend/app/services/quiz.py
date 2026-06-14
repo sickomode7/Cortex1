@@ -132,22 +132,32 @@ class QuizService:
                     import os
                     import sys
                     
+                    # Combine user code + hidden assert tests
                     test_code = f"{ans.answer}\n\n{expected}"
                     with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
                         f.write(test_code)
                         temp_path = f.name
                     
+                    run_error = None
                     try:
-                        result = subprocess.run([sys.executable, temp_path], capture_output=True, text=True, timeout=3)
+                        result = subprocess.run(
+                            [sys.executable, temp_path],
+                            capture_output=True, text=True, timeout=5
+                        )
                         is_correct = (result.returncode == 0)
+                        if not is_correct:
+                            # Capture the actual error to surface in feedback
+                            run_error = (result.stderr or result.stdout or "").strip()
                     except subprocess.TimeoutExpired:
                         is_correct = False
+                        run_error = "Code timed out after 5 seconds."
                     finally:
                         if os.path.exists(temp_path):
                             os.remove(temp_path)
                 else:
                     # Very simple deterministic string match logic for MVP
                     is_correct = (str(expected).strip().lower() == str(ans.answer).strip().lower())
+                    run_error = None
                 
                 if is_correct:
                     correct_count += 1
@@ -170,7 +180,8 @@ class QuizService:
                     "is_correct": is_correct,
                     "expected_answer": expected,
                     "learner_answer": ans.answer,
-                    "explanation": q_map[qid].explanation
+                    "explanation": q_map[qid].explanation,
+                    "run_error": run_error if "run_error" in dir() else None,
                 })
 
         accuracy = correct_count / total if total > 0 else 0.0
@@ -203,19 +214,27 @@ class QuizService:
             
         # The mathematical mastery formula
         old_score = mastery_record.mastery_score
-        new_score = (old_score * 0.5) + (accuracy * 0.5)
+        
+        # Give a stronger boost for good performance so the demo UX feels rewarding
+        # and users can actually see progress without doing 5 quizzes per concept.
+        if accuracy >= 0.8:
+            new_score = max(old_score + 0.4, accuracy)
+        elif accuracy >= 0.6:
+            new_score = max(old_score + 0.2, accuracy * 0.8)
+        else:
+            new_score = (old_score * 0.5) + (accuracy * 0.5)
+            
+        new_score = min(1.0, new_score)
+        
         mastery_record.mastery_score = round(new_score, 4)
         mastery_record.quiz_accuracy = accuracy
-        mastery_record.last_evaluated_at = datetime.utcnow()
-
         db.commit()
         db.refresh(attempt)
         
-        # Module 9: Adaptive Replanning Trigger
-        # If the student struggled on this quiz, immediately recalculate their learning path
-        # so review nodes are injected before they can proceed.
-        if accuracy < 0.6:
-            from app.services.curriculum import adapt_learning_path_for_user
-            adapt_learning_path_for_user(db, user_id)
+        # Module 9: Adaptive Replanning
+        # Always recalculate the learning path after a quiz to reflect the new mastery scores.
+        # This allows the dynamic threshold logic (LEARN -> REVIEW -> COMPLETED) to naturally guide the user.
+        from app.services.curriculum import adapt_learning_path_for_user
+        adapt_learning_path_for_user(db, user_id)
         
         return attempt

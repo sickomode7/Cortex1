@@ -12,7 +12,7 @@ class QuizCreate(CortexSchema):
     concept_id: UUID
     learning_path_item_id: UUID | None = None
     quiz_type: QuizType = QuizType.MASTERY_CHECK
-    question_count: int = 3
+    question_count: int = 6
 
 
 class QuizRead(CortexSchema):

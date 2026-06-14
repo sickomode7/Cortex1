@@ -67,7 +67,7 @@ def generate_learning_path_for_user(db: Session, user_id: UUID) -> CurriculumPla
 
     skipped_concepts: list[CurriculumConceptSummary] = []
     actionable_concepts: list[CurriculumConceptSummary] = []
-    path_blueprint: list[tuple[Concept, LearningPathItemType, str]] = []
+    path_blueprint: list[tuple[Concept, LearningPathItemType, str, str]] = []
 
     for concept in concepts:
         mastery_score = round(mastery_by_concept_id.get(concept.id, DEFAULT_MASTERY_SCORE), 4)
@@ -88,6 +88,8 @@ def generate_learning_path_for_user(db: Session, user_id: UUID) -> CurriculumPla
                     reason=f"Mastery {mastery_score:.2f} meets skip threshold {skip_threshold:.2f}.",
                 )
             )
+            # Include in the roadmap, but mark it as completed so the frontend shows a green checkmark
+            path_blueprint.append((concept, LearningPathItemType.LEARN, "Mastered", LearningPathItemStatus.COMPLETED))
             continue
 
         if mastery_score >= review_threshold:
@@ -105,6 +107,9 @@ def generate_learning_path_for_user(db: Session, user_id: UUID) -> CurriculumPla
 
         if unmet_prerequisites:
             reason = f"{reason} Weak prerequisites: {', '.join(unmet_prerequisites)}."
+            initial_status = LearningPathItemStatus.PENDING
+        else:
+            initial_status = LearningPathItemStatus.IN_PROGRESS
 
         actionable_concepts.append(
             CurriculumConceptSummary(
@@ -115,7 +120,7 @@ def generate_learning_path_for_user(db: Session, user_id: UUID) -> CurriculumPla
                 reason=reason,
             )
         )
-        path_blueprint.append((concept, item_type, reason))
+        path_blueprint.append((concept, item_type, reason, initial_status))
 
     if not path_blueprint:
         concept = concepts[-1]
@@ -129,7 +134,7 @@ def generate_learning_path_for_user(db: Session, user_id: UUID) -> CurriculumPla
                 reason=fallback_reason,
             )
         )
-        path_blueprint.append((concept, LearningPathItemType.REVIEW, fallback_reason))
+        path_blueprint.append((concept, LearningPathItemType.REVIEW, fallback_reason, LearningPathItemStatus.IN_PROGRESS))
 
     learning_path = _persist_learning_path(
         db=db,
@@ -189,7 +194,7 @@ def _persist_learning_path(
     user_id: UUID,
     learner_profile_id: UUID,
     domain_key: str,
-    path_blueprint: list[tuple[Concept, LearningPathItemType, str]],
+    path_blueprint: list[tuple[Concept, LearningPathItemType, str, str]],
     rationale: str,
 ) -> LearningPath:
     current_active_paths = db.scalars(
@@ -219,13 +224,13 @@ def _persist_learning_path(
     db.add(learning_path)
     db.flush()
 
-    for position, (concept, item_type, reason) in enumerate(path_blueprint, start=1):
+    for position, (concept, item_type, reason, initial_status) in enumerate(path_blueprint, start=1):
         item = LearningPathItem(
             learning_path_id=learning_path.id,
             concept_id=concept.id,
             position=position,
             item_type=item_type,
-            status=LearningPathItemStatus.PENDING,
+            status=initial_status,
             unlock_condition=reason,
         )
         db.add(item)
@@ -266,6 +271,9 @@ def _build_path_rationale(actionable_count: int, skipped_count: int, thresholds:
 
 def _serialize_learning_path(path: LearningPath) -> LearningPathRead:
     sorted_items = sorted(path.items, key=lambda item: item.position)
+
+    # Removed artificial promotion of first pending item to allow multiple IN_PROGRESS nodes.
+
     return LearningPathRead(
         id=path.id,
         user_id=path.user_id,
@@ -287,9 +295,11 @@ def _serialize_learning_path(path: LearningPath) -> LearningPathRead:
                 concept_name=item.concept.name,
                 position=item.position,
                 item_type=item.item_type,
+                # Return the true status from the database, which natively supports multiple IN_PROGRESS nodes.
                 status=item.status,
                 unlock_condition=item.unlock_condition,
             )
-            for item in sorted_items
+            for i, item in enumerate(sorted_items)
         ],
     )
+
