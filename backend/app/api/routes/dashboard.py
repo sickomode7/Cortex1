@@ -25,6 +25,14 @@ def get_activity_history(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """
+    Retrieve a chronologically sorted history of the user's daily learning activities 
+    over the last 30 days. This endpoint queries QuizAttempts and Lessons, aggregates 
+    them by date, and calculates daily metrics such as 'quizzes taken', 
+    'lessons completed', and 'average accuracy'.
+    
+    This feeds into the frontend Activity Heatmap and Accuracy Trend charts.
+    """
     try:
         from datetime import datetime, timedelta
         from collections import defaultdict
