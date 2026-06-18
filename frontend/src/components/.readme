@@ -1,0 +1,7 @@
+<!--
+This directory contains reusable React components.
+- ui/ holds generic design system components (buttons, inputs).
+- other directories contain feature-specific components like quiz, lesson, and dashboard components.
+-->
+# Components Directory
+Reusable UI and feature components for the React frontend.

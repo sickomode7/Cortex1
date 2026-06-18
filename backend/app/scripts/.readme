@@ -1,0 +1,6 @@
+<!--
+This directory is for utility scripts and CLI commands.
+- For example, scripts to initialize the database, seed data, or run background jobs.
+-->
+# Scripts Directory
+Utility and operational scripts for the backend.

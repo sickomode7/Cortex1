@@ -1,0 +1,7 @@
+<!--
+This is the Next.js app router directory.
+- It contains the pages, layouts, and route handlers for the frontend.
+- Subdirectories like dashboard, lesson, onboarding represent different routes.
+-->
+# App Directory
+Next.js App Router containing pages and routing logic.

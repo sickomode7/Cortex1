@@ -1,0 +1,6 @@
+<!--
+This directory handles AI/Agent logic.
+- Prompts, agent orchestration, and interactions with LLMs should be organized here.
+-->
+# Agents Directory
+Contains logic and modules for AI agents and LLM integrations.

@@ -1,0 +1,7 @@
+<!--
+This directory holds the core configuration and application setup files.
+- config.py manages environment variables and global app settings.
+- security settings and other fundamental configurations should be placed here.
+-->
+# Core Directory
+Core configuration, settings, and base setup for the FastAPI backend.

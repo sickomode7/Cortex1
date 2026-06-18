@@ -1,0 +1,7 @@
+<!--
+This directory is managed by Alembic.
+- It handles database migrations to keep the database schema in sync with the SQLAlchemy models.
+- The versions/ subdirectory contains the individual migration scripts.
+-->
+# Alembic Migrations
+Database migration scripts and configuration.

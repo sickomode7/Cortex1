@@ -1,0 +1,6 @@
+<!--
+This directory is responsible for database connectivity and session management.
+- Contains the database engine setup and declarative base.
+-->
+# DB Directory
+Handles database connection setup and session lifecycle.

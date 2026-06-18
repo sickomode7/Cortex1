@@ -1,0 +1,6 @@
+<!--
+This directory contains state management logic.
+- Redux slices, Zustand stores, or Context API definitions live here to manage global app state.
+-->
+# Store Directory
+Global state management definitions.

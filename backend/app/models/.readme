@@ -1,0 +1,6 @@
+<!--
+This directory defines the SQLAlchemy ORM models.
+- These represent the database tables and their relationships.
+-->
+# Models Directory
+Database ORM models definition for the backend.

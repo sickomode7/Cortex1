@@ -1,0 +1,6 @@
+<!--
+This directory contains domain logic and business rules.
+- Entities and repositories or use cases can be defined here, separating business logic from the HTTP layer.
+-->
+# Domain Directory
+Core business logic and domain entities of the application.

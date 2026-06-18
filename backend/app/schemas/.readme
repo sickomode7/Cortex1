@@ -1,0 +1,6 @@
+<!--
+This directory contains the Pydantic schemas.
+- These are used for data validation, serialization, and deserialization of API requests and responses.
+-->
+# Schemas Directory
+Pydantic schemas used for type checking and API data validation.

@@ -1,0 +1,6 @@
+<!--
+This directory contains service layer logic.
+- Services handle complex operations, bridging the gap between API routes and database models/domain logic.
+-->
+# Services Directory
+Service layer containing reusable business operations and logic.

@@ -1,0 +1,7 @@
+<!-- 
+This directory contains the API routes and dependencies for the backend. 
+- router.py aggregates the routers from different modules.
+- deps.py contains the dependency injection functions like getting the DB session or current user.
+-->
+# API Directory
+This directory serves the HTTP endpoints for the application.
