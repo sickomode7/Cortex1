@@ -10,6 +10,18 @@ import api from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import ProgressRing from "@/components/dashboard/ProgressRing";
 import RoadmapModal, { PathItem } from "@/components/dashboard/RoadmapModal";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { ActivityHeatmap } from "@/components/dashboard/ActivityHeatmap";
+import { AccuracyTrendChart } from "@/components/dashboard/AccuracyTrendChart";
+import { XPBar } from "@/components/dashboard/XPBar";
+import { BadgeShelf } from "@/components/dashboard/BadgeShelf";
+
+interface DailyActivity {
+  date: string;
+  quizzes_taken: number;
+  lessons_completed: number;
+  avg_accuracy: number | null;
+}
 
 interface DashboardData {
   user_id: string;
@@ -20,6 +32,11 @@ interface DashboardData {
   mastery_map: any[];
   weak_areas: any[];
   next_action?: any;
+  current_streak_days?: number;
+  total_xp?: number;
+  level?: number;
+  badges?: string[];
+  new_badges?: string[];
 }
 
 export default function DashboardPage() {
@@ -29,6 +46,7 @@ export default function DashboardPage() {
 
   const [syncState, setSyncState] = useState<"syncing" | "done" | "error">("syncing");
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [activityHistory, setActivityHistory] = useState<DailyActivity[]>([]);
   const [pathItems, setPathItems] = useState<PathItem[]>([]);
   const [showRoadmap, setShowRoadmap] = useState(false);
   const hasSynced = useRef(false);
@@ -64,12 +82,20 @@ export default function DashboardPage() {
         });
 
         try {
-          const [overviewRes, pathRes] = await Promise.all([
+          const [overviewRes, pathRes, historyRes] = await Promise.all([
             api.get(`/dashboard/overview`),
             api.get(`/curriculum/users/${dbUser.id}/active-path`),
+            api.get(`/dashboard/activity-history`).catch(() => ({ data: [] })),
           ]);
           setDashboardData(overviewRes.data);
           setPathItems(pathRes.data.items || []);
+          setActivityHistory(historyRes.data || []);
+
+          if (overviewRes.data.new_badges && overviewRes.data.new_badges.length > 0) {
+            overviewRes.data.new_badges.forEach((b: string) => {
+              toast.success("New Badge Earned!", { description: `You unlocked the ${b} badge.`, duration: 5000 });
+            });
+          }
 
           // Auto-show roadmap only on first visit (tracked in localStorage)
           const key = `cortex_roadmap_seen_${dbUser.id}`;
@@ -102,7 +128,7 @@ export default function DashboardPage() {
 
   if (!isLoaded || syncState === "syncing") {
     return (
-      <div className="min-h-screen bg-[#080808] flex flex-col items-center justify-center text-white">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center text-foreground">
         <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mb-4" />
         <p className="text-zinc-400 text-sm animate-pulse tracking-widest uppercase">
           Synchronizing Cortex Engine...
@@ -113,20 +139,20 @@ export default function DashboardPage() {
 
   if (syncState === "error") {
     return (
-      <div className="min-h-screen bg-[#080808] flex flex-col items-center justify-center text-white">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center text-foreground">
         <p className="text-red-400 text-sm">Failed to connect to Cortex. Please refresh.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#080808] text-white font-sans">
+    <div className="min-h-screen bg-background text-foreground font-sans">
       <Toaster position="top-center" theme="dark" />
 
       {/* ── Top Nav ── */}
       <header className="flex justify-between items-center px-8 py-5 border-b border-white/5">
         <div className="flex items-center gap-3">
-          <div className="bg-white text-black w-7 h-7 rounded-full flex items-center justify-center font-serif italic font-bold text-sm">
+          <div className="bg-foreground text-background w-7 h-7 rounded-full flex items-center justify-center font-serif italic font-bold text-sm">
             C
           </div>
           <span className="font-serif text-lg tracking-tight">Cortex</span>
@@ -135,12 +161,13 @@ export default function DashboardPage() {
           {pathItems.length > 0 && (
             <button
               onClick={() => setShowRoadmap(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20 text-sm font-medium text-zinc-300 hover:text-white transition-all duration-200"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-background hover:bg-accent text-sm font-medium text-muted-foreground hover:text-foreground transition-all duration-200"
             >
               <Map className="w-4 h-4 text-indigo-400" />
               View Roadmap
             </button>
           )}
+          <ThemeToggle />
           <UserButton />
         </div>
       </header>
@@ -173,7 +200,7 @@ export default function DashboardPage() {
               className="flex items-center gap-6"
             >
               <div className="text-right hidden sm:block">
-                <p className="text-white font-medium text-lg">Overall Progress</p>
+                <p className="text-foreground font-medium text-lg">Overall Progress</p>
                 <p className="text-zinc-500 text-sm">
                   {dashboardData.total_concepts_mastered} of {dashboardData.total_concepts_in_domain} concepts mastered
                 </p>
@@ -206,7 +233,7 @@ export default function DashboardPage() {
                     <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
                     <p className="text-xs font-bold tracking-widest text-indigo-400 uppercase">Up Next</p>
                   </div>
-                  <h2 className="font-serif text-2xl text-white mb-2">{nextItem.concept_name}</h2>
+                  <h2 className="font-serif text-2xl text-foreground mb-2">{nextItem.concept_name}</h2>
                   <p className="text-zinc-500 text-sm mb-6">
                     {nextItem.item_type === "quiz"
                       ? "Complete this quiz to unlock your next topic"
@@ -241,7 +268,7 @@ export default function DashboardPage() {
               className="rounded-3xl border border-white/8 bg-white/[0.02] p-6 flex-1"
             >
               <p className="text-xs font-bold tracking-widest text-zinc-500 uppercase mb-3">Progress</p>
-              <p className="font-serif text-4xl text-white mb-1">{completedCount}</p>
+              <p className="font-serif text-4xl text-foreground mb-1">{completedCount}</p>
               <p className="text-zinc-500 text-sm">of {pathItems.length} concepts mastered</p>
             </motion.div>
 
@@ -254,7 +281,7 @@ export default function DashboardPage() {
               className="group rounded-3xl border border-indigo-500/20 bg-indigo-500/5 hover:bg-indigo-500/10 hover:border-indigo-500/40 p-6 text-left transition-all duration-300"
             >
               <Map className="w-6 h-6 text-indigo-400 mb-3 group-hover:scale-110 transition-transform" />
-              <p className="font-semibold text-white text-sm mb-1">View Full Roadmap</p>
+              <p className="font-semibold text-foreground text-sm mb-1">View Full Roadmap</p>
               <p className="text-zinc-500 text-xs">See all {pathItems.length} topics in your path</p>
             </motion.button>
           </div>
@@ -263,7 +290,7 @@ export default function DashboardPage() {
         {/* ── Active Mastery Progress ── */}
         {dashboardData && dashboardData.mastery_map.length > 0 && (
           <div className="mt-12">
-            <h3 className="font-serif text-2xl text-white mb-6">Your Mastery</h3>
+            <h3 className="font-serif text-2xl text-foreground mb-6">Your Mastery</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {dashboardData.mastery_map.map((item: any) => {
                 const pct = Math.round(item.mastery_score * 100);
@@ -272,7 +299,7 @@ export default function DashboardPage() {
                   <div key={item.concept_id} className={`rounded-2xl border bg-white/[0.02] p-5 ${isWeak ? 'border-amber-500/20' : 'border-white/5'}`}>
                     <div className="flex justify-between items-end mb-3">
                       <div>
-                        <h4 className="font-semibold text-white text-base">{item.concept_name}</h4>
+                        <h4 className="font-semibold text-foreground text-base">{item.concept_name}</h4>
                         {isWeak && <span className="text-amber-500 text-[10px] font-bold uppercase tracking-widest mt-1 inline-block">Needs Review</span>}
                       </div>
                       <span className={`text-sm font-bold ${isWeak ? 'text-amber-500' : 'text-indigo-400'}`}>{pct}%</span>
@@ -297,6 +324,34 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
+
+        {/* ── Gamification & Activity ── */}
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="flex flex-col gap-8">
+            <div className="rounded-2xl border bg-white/[0.02] border-white/5 p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-serif text-xl text-foreground">XP & Level</h3>
+                {dashboardData?.current_streak_days ? (
+                  <div className="text-sm font-medium text-amber-500 bg-amber-500/10 px-3 py-1 rounded-full flex items-center gap-1">
+                    🔥 {dashboardData.current_streak_days} Day Streak
+                  </div>
+                ) : null}
+              </div>
+              <XPBar level={dashboardData?.level || 0} total_xp={dashboardData?.total_xp || 0} />
+            </div>
+            <div className="rounded-2xl border bg-white/[0.02] border-white/5 p-6">
+              <BadgeShelf badges={dashboardData?.badges || []} />
+            </div>
+          </div>
+          <div className="flex flex-col gap-8">
+             <div className="rounded-2xl border bg-white/[0.02] border-white/5 p-6">
+               <ActivityHeatmap data={activityHistory} />
+             </div>
+             <div className="rounded-2xl border bg-white/[0.02] border-white/5 p-6">
+               <AccuracyTrendChart data={activityHistory} />
+             </div>
+          </div>
+        </div>
       </main>
 
       {/* ── Roadmap Modal ── */}

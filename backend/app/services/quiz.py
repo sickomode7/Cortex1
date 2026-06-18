@@ -231,6 +231,13 @@ class QuizService:
         db.commit()
         db.refresh(attempt)
         
+        try:
+            from app.services.analytics import AnalyticsService
+            AnalyticsService.record_activity(db, user_id, "quiz")
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f"Streak update failed: {e}")
+        
         # Module 9: Adaptive Replanning
         # Always recalculate the learning path after a quiz to reflect the new mastery scores.
         # This allows the dynamic threshold logic (LEARN -> REVIEW -> COMPLETED) to naturally guide the user.

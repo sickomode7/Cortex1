@@ -21,6 +21,7 @@ class Analytics(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
 
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    total_xp: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
     total_time_spent_minutes: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     lessons_completed_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     quizzes_attempted_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

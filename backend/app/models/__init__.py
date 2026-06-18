@@ -9,6 +9,7 @@ from app.models.curriculum import (
     LearningPath,
     LearningPathItem,
 )
+from app.models.gamification import Badge, UserBadge
 from app.models.tutoring import TutorConversation, TutorMessage
 from app.models.user import User
 

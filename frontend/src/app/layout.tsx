@@ -4,6 +4,7 @@ import { Inter, Playfair_Display } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import TutorDrawer from "@/components/tutor/TutorDrawer";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -29,14 +30,17 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${playfair.variable} h-full antialiased dark`}
+      className={`${inter.variable} ${playfair.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col font-sans" suppressHydrationWarning>
-        <ClerkProvider>
-          {children}
-          <TutorDrawer />
-          <Toaster position="top-center" theme="dark" />
-        </ClerkProvider>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+          <ClerkProvider>
+            {children}
+            <TutorDrawer />
+            <Toaster position="top-center" theme="dark" />
+          </ClerkProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

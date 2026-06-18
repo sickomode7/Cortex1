@@ -11,6 +11,10 @@ from app.schemas.assessment import MasteryRecordRead
 from app.schemas.dashboard import DashboardOverviewRead, NextActionRead
 from app.services.curriculum import _resolve_mastery_thresholds
 from app.services.onboarding import get_profile_or_404
+from app.models.analytics import Analytics
+from app.services.analytics import AnalyticsService
+from app.models.gamification import UserBadge
+from datetime import datetime, timedelta
 
 
 class DashboardService:
@@ -81,6 +85,35 @@ class DashboardService:
                     )
                     break
 
+        streak_days = 0
+        last_activity = None
+        total_xp = 0
+        level = 0
+        badges = []
+        new_badges = []
+        
+        try:
+            analytics = db.query(Analytics).filter(Analytics.user_id == user_id).first()
+            if analytics:
+                streak_days = analytics.current_streak_days
+                last_activity = analytics.last_activity_at
+                
+                xp = getattr(analytics, 'total_xp', None)
+                if xp is not None:
+                    total_xp = xp
+                    level = AnalyticsService.get_level(xp)
+        except Exception:
+            pass
+
+        try:
+            user_badges = db.query(UserBadge).filter(UserBadge.user_id == user_id).all()
+            for ub in user_badges:
+                badges.append(ub.badge_code)
+                if getattr(ub, 'earned_at', None) and ub.earned_at.replace(tzinfo=None) >= datetime.utcnow() - timedelta(seconds=60):
+                    new_badges.append(ub.badge_code)
+        except Exception:
+            pass
+
         return DashboardOverviewRead(
             user_id=user_id,
             domain_key=domain_key,
@@ -89,5 +122,11 @@ class DashboardService:
             overall_progress_percentage=round(progress_percentage, 2),
             mastery_map=mastery_map,
             weak_areas=weak_areas,
-            next_action=next_action
+            next_action=next_action,
+            current_streak_days=streak_days,
+            last_activity_at=last_activity,
+            total_xp=total_xp,
+            level=level,
+            badges=badges,
+            new_badges=new_badges
         )

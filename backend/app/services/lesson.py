@@ -121,4 +121,11 @@ class LessonService:
             
             db.commit()
             db.refresh(lesson)
+            
+            try:
+                from app.services.analytics import AnalyticsService
+                AnalyticsService.record_activity(db, user_id, "lesson")
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).warning(f"Streak update failed: {e}")
         return lesson
